@@ -1,0 +1,23 @@
+2025-11-07 14:13:18,697 - conzero_power_manager - ERROR - GPIO initialization failed: 'GPIO busy'
+2025-11-07 14:13:24,430 - conzero_power_manager - ERROR - GPIO initialization failed: 'GPIO busy'
+2025-11-07 14:13:29,926 - conzero_power_manager - ERROR - GPIO initialization failed: 'GPIO busy'
+2025-11-07 14:13:35,471 - conzero_power_manager - ERROR - GPIO initialization failed: 'GPIO busy'
+2025-11-07 14:13:41,185 - conzero_power_manager - ERROR - GPIO initialization failed: 'GPIO busy'
+2025-11-07 14:13:46,706 - conzero_power_manager - ERROR - GPIO initialization failed: 'GPIO busy'
+2025-11-07 14:13:52,499 - conzero_power_manager - ERROR - GPIO initialization failed: 'GPIO busy'
+2025-11-07 14:13:58,210 - conzero_power_manager - ERROR - GPIO initialization failed: 'GPIO busy'
+2025-11-07 14:14:03,968 - conzero_power_manager - ERROR - GPIO initialization failed: 'GPIO busy'
+2025-11-07 14:14:09,712 - conzero_power_manager - ERROR - GPIO initialization failed: 'GPIO busy'
+2025-11-07 14:14:15,434 - conzero_power_manager - ERROR - GPIO initialization failed: 'GPIO busy'
+2025-11-07 14:14:20,933 - conzero_power_manager - ERROR - GPIO initialization failed: 'GPIO busy'
+2025-11-07 14:14:26,423 - conzero_power_manager - ERROR - GPIO initialization failed: 'GPIO busy'
+2025-11-07 14:14:31,936 - conzero_power_manager - ERROR - GPIO initialization failed: 'GPIO busy'
+2025-11-07 14:14:37,424 - conzero_power_manager - ERROR - GPIO initialization failed: 'GPIO busy'
+2025-11-07 14:14:42,961 - conzero_power_manager - ERROR - GPIO initialization failed: 'GPIO busy'
+2025-11-07 14:15:03,494 - conzero_power_manager - INFO - Industrial Power Manager initialized
+2025-11-07 14:15:03,496 - conzero_power_manager - INFO - Power button: GPIO26
+2025-11-07 14:15:03,496 - conzero_power_manager - INFO - Shutdown LED: GPIO6
+2025-11-07 14:15:03,497 - conzero_power_manager - INFO - Power Manager running - waiting for events...
+2025-11-07 14:15:04,174 - conzero_power_manager - INFO - Received signal 15 - shutting down
+2025-11-07 14:15:04,175 - conzero_power_manager - INFO - Power Manager cleaned up
+2025-11-07 14:15:04,175 - conzero_power_manager - INFO - Power Manager cleaned up

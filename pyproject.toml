@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "conzero-jet"
+version = "1.0.0"
+description = "Swim Jet Controller with BLE and UART motor control"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Sagar Regmi", email = ""}
+]
+keywords = ["motor-control", "bluetooth", "ble", "uart", "raspberry-pi", "stm32"]
+
+dependencies = [
+    "bleak>=0.21.1",
+    "pyserial>=3.5",
+    "gpiozero>=2.0.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.1.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+    "isort>=5.12.0",
+]
+
+
+[project.scripts]
+conzero = "src.main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "-v --cov=src --cov-report=term-missing"
+
+[tool.black]
+line-length = 100
+target-version = ['py310']
+include = '\\.pyi?$'
+
+[tool.isort]
+profile = "black"
+line_length = 100

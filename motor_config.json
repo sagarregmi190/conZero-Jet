@@ -1,0 +1,17 @@
+{
+  "speed_ramp_layout": null,
+  "working_registers": [],
+  "motor_caps": {
+    "version": 0,
+    "data_crc": 0,
+    "rx_max": 3,
+    "txs_max": 3,
+    "txa_max": 1
+  },
+  "rpm_scaling_factor": 1.0,
+  "timeouts": {
+    "handshake": 0.6,
+    "data_read": 1.5,
+    "command": 0.8
+  }
+}

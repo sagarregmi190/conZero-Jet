@@ -1,1 +1,0 @@
-### Handling the Major Errors within the device 
