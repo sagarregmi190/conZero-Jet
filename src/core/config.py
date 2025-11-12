@@ -1,3 +1,8 @@
+import os 
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).parent.parent.parent.resolve()
+
 ##config.py configuration for 3.5 inc display 
 
 #screen dimension 
@@ -157,11 +162,11 @@ FAULT_COLORS = {
 }
 
 PATHS = {
-    "paired_remotes": "/home/pi/conzero-jet-project/paired_remotes.json",
-    "icon_bt_off": "/home/pi/conzero-jet-project/icons/ble_off.png",
-    "icon_bt_on": "/home/pi/conzero-jet-project/icons/ble_On.png",
-    "icon_wifi_off": "/home/pi/conzero-jet-project/icons/Off_Wifi.png",
-    "icon_wifi_on": "/home/pi/conzero-jet-project/icons/On_Wifi.png"
+    "paired_remotes": str(PROJECT_ROOT / "paired_remotes.json"),
+    "icon_bt_off": str(PROJECT_ROOT / "icons" / "ble_off.png"),
+    "icon_bt_on": str(PROJECT_ROOT / "icons" / "ble_On.png"),
+    "icon_wifi_off": str(PROJECT_ROOT / "icons" / "Off_Wifi.png"),
+    "icon_wifi_on": str(PROJECT_ROOT / "icons" / "On_Wifi.png"),
 }
 
 # Motor speed conversion factor

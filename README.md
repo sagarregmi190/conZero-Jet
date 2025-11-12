@@ -1,102 +1,113 @@
-# ConZero-Jet
+# ConZero-Jet 🏊
 
- **Smart Swim Jet Controller** with Bluetooth BLE remote control and STM32 motor management for Raspberry Pi.
+**Smart Swim Jet Controller** - Bluetooth BLE remote control with STM32 motor management for Raspberry Pi
 
 ![Python](https://img.shields.io/badge/python-3.10+-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
-![Status](https://img.shields.io/badge/status-active-success.svg)
+![Platform](https://img.shields.io/badge/platform-Raspberry%20Pi-red.svg)
 
 ---
 
-##  Features
+## ✨ Features
 
--  **Without Touchscreen UI** - Tkinter-based 480x320 display interface
--  **BLE Remote Control** - Shelly BLU Button wireless control
--  **UART Motor Control** - STM32 motor controller via ASPEP protocol
--  **GPIO Buttons** - Physical button support (power, mode, timer, speed)
--  **Training Programs** - Pre-configured workout modes (P1-P5)
--  **Real-time Monitoring** - Speed, timer, and status display
+- 🖥️ **Touchscreen UI** - Tkinter-based 480x320 display interface
+- 📱 **BLE Remote Control** - Shelly BLU Button wireless control
+- ⚙️ **UART Motor Control** - STM32 motor controller via serial communication
+- 🎮 **GPIO Support** - Physical button controls
+- 🏋️ **Training Programs** - Pre-configured workout modes
+- 📊 **Real-time Monitoring** - Speed, timer, and status display
 
 ---
 
-##  Hardware Requirements
+## 🛠️ Hardware Requirements
 
 | Component | Specification |
 |-----------|--------------|
-| **Computer** | Raspberry Pi 3/4/5 |
+| **Computer** | Raspberry Pi 4 Model B (recommended) |
 | **Display** | 3.5" Touchscreen (480x320) |
-| **Motor Controller** | STM32-based motor board (UART) |
+| **Motor Controller** | STM32-based UART motor board |
 | **Remote** | Shelly BLU Button (optional) |
-| **GPIO Buttons** | 4x physical buttons (optional) |
+| **GPIO Buttons** | Physical buttons (optional) |
 
 ---
 
-##  Installation
+## 📦 Installation
 
-### 1. System Dependencies (Raspberry Pi)
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/sagarregmi190/conZero-Jet.git
+cd conZero-Jet
+```
+
+### 2. System Dependencies (Raspberry Pi)
 
 ```bash
 # Update system
 sudo apt-get update && sudo apt-get upgrade -y
 
-# Install Bluetooth & Serial support
-sudo apt-get install -y bluetooth bluez libbluetooth-dev python3-tk python3-serial
+# Install required packages
+sudo apt-get install -y bluetooth bluez python3-tk python3-pip python3-venv unclutter
 
 # Add user to required groups
 sudo usermod -a -G dialout $USER
 sudo usermod -a -G bluetooth $USER
 
-# Reboot
+# Reboot to apply changes
 sudo reboot
 ```
 
 ### 3. Python Dependencies
 
 ```bash
-# Create virtual environment (recommended)
+# Create virtual environment
 python3 -m venv venv
 source venv/bin/activate
 
 # Install dependencies
-pip install -r requirements.txt
+pip install -r requirements-current.txt
+```
+
+### 4. Production Setup (Auto-start on boot)
+
+```bash
+# Run setup script
+chmod +x setup_production.sh
+./setup_production.sh
+
+# Reboot to enable auto-start
+sudo reboot
 ```
 
 ---
 
-##  Usage
+## 🚀 Usage
 
-### Run the Application
+### Manual Run
 
 ```bash
 # From project directory
-python src/main.py
+python3 src/main.py
 
-# Or with environment variables
-CONZERO_UART_PORT=/dev/ttyS0 python src/main.py
+# Or with custom UART port
+CONZERO_UART_PORT=/dev/ttyS0 python3 src/main.py
 ```
 
-### Control Options
+### Auto-start (Production Mode)
 
-#### Touchscreen Controls
-- **Power Button** - Turn motor on/off
-- **Mode Button** - Cycle through training programs (P0, T, P1-P5)
-- **Timer Button** - Set workout duration (15-90 min)
-- **Speed Button** - Adjust speed (20-100%)
-
-#### BLE Remote (Shelly BLU Button)
-- **Button 1 Single Press** - Pause/Resume
-- **Button 1 Long Press** - Power on/off
-- **Button 2** - Change mode
-- **Button 3** - Set timer
-- **Button 4** - Adjust speed
+After running `setup_production.sh`, the application will:
+- ✅ Start automatically on boot
+- ✅ Run in fullscreen kiosk mode
+- ✅ Hide mouse cursor
+- ✅ Disable screen blanking
 
 ---
 
-##  Configuration
+## ⚙️ Configuration
 
 ### Environment Variables
 
-Create a `.env` file (optional):
+Create a `.env` file in the project root:
 
 ```bash
 # UART Configuration
@@ -104,67 +115,42 @@ CONZERO_UART_PORT=/dev/ttyS0
 UART_BAUD=115200
 
 # BLE Configuration
-ALLOWLIST_MACS=AA:BB:CC:DD:EE:FF,11:22:33:44:55:66
+ALLOWLIST_MACS=AA:BB:CC:DD:EE:FF
 BLE_DEBUG=false
 ```
 
-### GPIO Pin Mapping
+### Motor Configuration
 
-Edit `src/config.py` to change GPIO pins:
+Edit `motor_config.json`:
 
-```python
-GPIO_PINS = {
-    'power': 16,    # BCM pin 16
-    'mode': 17,     # BCM pin 17
-    'timer': 27,    # BCM pin 27
-    'speed': 22,    # BCM pin 22
-}
-```
-
-### Training Programs
-
-Customize workout programs in `src/config.py`:
-
-```python
-TRAINING_PLANS = {
-    "P1": [(120, 20), (180, 30), (60, 20)],  # (seconds, speed%)
-    "P2": [(180, 45), (180, 55), (120, 45)],
-    # Add more...
+```json
+{
+  "max_speed": 100,
+  "min_speed": 20,
+  "default_speed": 50,
+  "acceleration_rate": 5
 }
 ```
 
 ---
 
-## Testing
-
-```bash
-# Run all tests
-pytest tests/
-
-# Run with coverage
-pytest tests/ --cov=src --cov-report=term-missing
-
-# Run specific test
-pytest tests/test_uart_manager.py -v
-```
-
----
-
-##  Project Structure
+## 📁 Project Structure
 
 ```
-conzeroproject/
+conZero-Jet/
 ├── src/
 │   ├── main.py              # Application entry point
-│   ├── config.py            # Configuration settings
-│   ├── conzero_jet_ui.py    # Tkinter UI
-│   ├── connectivity.py      # BLE connectivity
-│   ├── uart_manager.py      # STM32 motor control
-│   ├── gpio_handler.py      # GPIO button handling
-│   ├── mode_manager.py      # Training mode logic
-│   └── error_handler.py     # Error management
-├── tests/                   # Test files
-├── requirements.txt         # Python dependencies
+│   ├── core/                # Core application logic
+│   ├── hardware/            # Hardware interface modules
+│   └── ui_handlers/         # UI event handlers
+├── logs/                    # Application logs
+├── icons/                   # UI icon assets
+├── motor_config.json        # Motor settings
+├── paired_remotes.json      # BLE device pairings
+├── requirements-current.txt # Python dependencies
+├── setup_production.sh      # Production setup script
+├── start_conzero.sh        # Startup script
+├── splash.sh               # Splash screen script
 └── README.md               # This file
 ```
 
@@ -173,6 +159,7 @@ conzeroproject/
 ## 🐛 Troubleshooting
 
 ### Bluetooth Not Working
+
 ```bash
 # Check Bluetooth service
 sudo systemctl status bluetooth
@@ -180,56 +167,88 @@ sudo systemctl status bluetooth
 # Restart Bluetooth
 sudo systemctl restart bluetooth
 
-# Scan for devices
-bluetoothctl scan on
+# Scan for BLE devices
+sudo hcitool lescan
 ```
 
 ### Serial Port Permission Denied
-```bash
-# Add user to dialout group
-sudo usermod -a -G dialout $USER
 
-# Or run with sudo (not recommended)
-sudo python src/main.py
+```bash
+# Check if user is in dialout group
+groups $USER
+
+# If not, add user and reboot
+sudo usermod -a -G dialout $USER
+sudo reboot
 ```
 
 ### Display Not Showing
+
 ```bash
-# Check if tkinter is installed
-python3 -c "import tkinter; print('OK')"
+# Test tkinter installation
+python3 -c "import tkinter; print('Tkinter OK')"
 
 # If missing, install
 sudo apt-get install python3-tk
+```
+
+### View Application Logs
+
+```bash
+# Real-time log monitoring
+tail -f logs/app.log
+
+# Or check BLE logs
+tail -f ble_app.log
+```
+
+---
+
+## 🔧 Useful Commands
+
+```bash
+# Test startup script manually
+./start_conzero.sh
+
+# Disable auto-start
+rm ~/.config/autostart/conzero-jet.desktop
+
+# Re-enable auto-start
+./setup_production.sh
+
+# Check UART port
+ls -l /dev/ttyS0
 ```
 
 ---
 
 ## 📜 License
 
-MIT License - See [LICENSE](LICENSE) file for details
+MIT License - See [license](license) file for details
 
 ---
 
 ## 👤 Author
 
-**Sagar Regmi** ([@sagarregmi190](https://github.com/sagarregmi190))
+**Sagar Regmi**  
+GitHub: [@sagarregmi190](https://github.com/sagarregmi190)
 
 ---
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
+2. Create a feature branch (`git checkout -b feature/new-feature`)
+3. Commit your changes (`git commit -m 'Add new feature'`)
+4. Push to the branch (`git push origin feature/new-feature`)
 5. Open a Pull Request
 
 ---
 
 ## 📞 Support
 
-- 🐛 [Report Issues](https://github.com/sagarregmi190/conzeroproject/issues)
-
+- 🐛 [Report Issues](https://github.com/sagarregmi190/conZero-Jet/issues)
+- 📧 Contact via GitHub
 
 ---
 
