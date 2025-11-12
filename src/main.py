@@ -12,9 +12,7 @@ if __name__ == "__main__":
     root.attributes("-fullscreen", FULLSCREEN)
     # Optional: toggle fullscreen with F11 and exit fullscreen with Escape
     root.bind("<F11>", lambda e: root.attributes("-fullscreen", not root.attributes("-fullscreen")))
-    root.bind("<Escape>", lambda e: root.attributes("-fullscreen", False))
     
-  
-
+    root.bind("<Escape>", lambda e: root.attributes("-fullscreen", False))
     app = JetUI(root)
     root.mainloop()
