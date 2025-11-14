@@ -6,13 +6,15 @@ import tkinter as tk
 from tkinter import PhotoImage
 from typing import Optional,List
 from hardware.connectivity import ConnectivityManager
+
 from hardware.wave import WaveAnimation
 from core.app_state import AppState
 from services.motor_service import MotorService
 from services.fault_service import FaultMonitor
+from core.translations import t, LanguageManager
  
 # Import Configuration and helpers 
-from core.config import (COLORS, TRAINING_PLANS, SPEED_PRESETS, GPIO_PINS, MODE_DURATIONS, 
+from core.config import (COLORS, TRAINING_PLANS, SPEED_PRESETS, GPIO_PINS, MODE_DURATIONS,MODE_DESCRIPTIONS,
                     FONTS, UI_DIMENSIONS, DEFAULTS, TIMER_OPTIONS,FAULT_NAMES,STALL_FAULTS,FAULT_COLORS,
                    PATHS)
 from hardware.gpio_handler import GPIOHandler
@@ -28,13 +30,27 @@ class JetUI:
         # STATE OBJECT (NEW - Centralized state)
         self.state = AppState()
         
+        
+        self._load_paired_remotes()
         # CONFIGURATION (Keep as self.X)
         self.colors = COLORS
         self.timer_options = TIMER_OPTIONS
         self.training_plans = TRAINING_PLANS.copy()
-        self.POWER_LONG_MS = 000
         self.fault_check_interval = 2000
         self.speed_check_interval = 1000 
+        
+         # Pairing system variables
+        self.paired_remotes = set()
+        self.pairing_mode = False
+        self._pre_pairing_count = 0
+        self._pairing_blink_id = None
+        self._mode_long_timer_id = None
+        self.single_remote_mode = True # TRUE for one remote , false for multiple remotes
+        #Language system
+        LanguageManager.set_language(self.state.language)
+        
+        #language switching variables 
+        self._mode_pressed =False
         
         # MANAGERS/SERVICES (Keep as self.X)
         self.mode_manager = ModeManager()
@@ -120,15 +136,16 @@ class JetUI:
         self.center_frame = tk.Frame(self.display_frame, bg=self.display_frame['bg'])
         self.center_frame.place(relx=0.5, rely=0.5, anchor="center")
         
-        self.speed_title = tk.Label(self.display_frame, text="SPEED", font=FONTS["label"], fg=COLORS["text"], 
+        self.speed_title = tk.Label(self.display_frame, text=t("ui.speed"), font=FONTS["label"], fg=COLORS["text"], 
                                   bg=self.display_frame['bg'], width=8, height=1)
+        
         self.speed_title.grid(row=1, column=0, pady=(8, 0), padx=(0, 0), sticky="nsew")
         
-        self.timer_title = tk.Label(self.display_frame, text="TIMER", font=FONTS["label"], fg=COLORS["text"], 
+        self.timer_title = tk.Label(self.display_frame, text=t("ui.timer"), font=FONTS["label"], fg=COLORS["text"], 
                                   bg=self.display_frame['bg'], width=8, height=1)
         self.timer_title.grid(row=1, column=1, pady=(8, 0), padx=(0, 0), sticky="nsew")
         
-        self.mode_title = tk.Label(self.display_frame, text="MODE", font=FONTS["label"], fg=COLORS["text"], 
+        self.mode_title = tk.Label(self.display_frame, text=t("ui.mode"), font=FONTS["label"], fg=COLORS["text"], 
                                  bg=self.display_frame['bg'], width=8, height=1)
         self.mode_title.grid(row=1, column=2, pady=(8, 0), padx=(0, 0), sticky="nsew")
 
@@ -191,6 +208,112 @@ class JetUI:
         
         # Start speed monitoring loop
         self.root.after(self.speed_check_interval, self._monitor_speed)
+        
+        
+# ====================================================== LANGUAGE SWITCHTING ======================================================  
+    def _refresh_ui_language(self):
+        """Refresh all UI texts after language change"""
+        from core.translations import t
+        
+        # Update main labels
+        self.speed_title.config(text=t("ui.speed"))
+        self.timer_title.config(text=t("ui.timer")) 
+        self.mode_title.config(text=t("ui.mode"))
+        
+        
+        # Update Bluetooth/WiFi text fallbacks
+        if not self.bt_icon_off:
+            self.bt_img_label.config(text=t("button.power"))
+        if not self.wifi_icon_off:
+            self.wifi_img_label.config(text=t("button.power"))  # or appropriate translation
+        
+        # Update running label
+        if self.state.show_running and self.state.mode == "P0":
+            rmins, rsecs = divmod(self.state.running_elapsed, 60)
+            self.speed_time_label.config(text=f"{t('ui.run')}: {rmins:02d}:{rsecs:02d}")
+        
+        # Update status label if it contains common translated messages
+        current_status = self.status_label.cget("text")
+        if current_status:
+            # Map common status messages to translations
+            status_mappings = {
+                "Remote Ready": t("ble.remote_connected"),
+                "Paired!": t("ble.remote_paired"), 
+                "Replaced!": t("ble.remote_replaced"),
+                "No Remote": t("ble.pairing_ended"),
+                "Press Remote Button": t("ble.pairing_mode"),
+                "LEARNMode - Press remote button": t("ble.learn_mode"),
+                "SHUTDOWN": t("status.shutdown"),
+                "MOTOR LINK FAIL": t("status.motor_link_fail"),
+                "START ERR": t("status.start_err"),
+                "STOP ERR": t("status.stop_err"),
+                "CRITICAL FAULT": t("fault.critical_required"),
+                "FAULT CLEAR FAIL": t("fault.clear_failed"),
+                "FAULTS CLEARED": t("fault.cleared"),
+                "CONDITION NOT FIXED": t("fault.critical_required"),
+                "FAULT CLEAR ERROR": t("fault.clear_failed"),
+                
+            }
+            translated = status_mappings.get(current_status, current_status)
+            self.status_label.config(text=translated)
+        
+        # Refresh current mode description if it's being displayed
+        current_text = self.status_label.cget("text")
+        if current_text:
+            mode_descriptions = {
+                "P0": t("mode.p0_desc"),
+                "P1": t("mode.p1_desc"),
+                "P2": t("mode.p2_desc"), 
+                "P3": t("mode.p3_desc"),
+                "P4": t("mode.p4_desc"),
+                "P5": t("mode.p5_desc"),
+                "T": t("mode.t_desc")
+            }
+            
+            # Check if current text matches any mode description
+            for mode_code, desc in mode_descriptions.items():
+                if current_text in [MODE_DESCRIPTIONS.get(mode_code), desc]:
+                    self.status_label.config(text=desc)
+                    break
+        
+        print("UI language refreshed")
+    
+    def _start_language_switch_timer(self):
+        """Start 5-second timer for language switch"""
+        if not self.state._language_switcher_timer:
+            self.state._language_switcher_timer = self.root.after(5000, self._switch_language)
+            self.status_label.config(text="", fg="#ff9800")
+
+    def _cancel_language_switch_timer(self):
+        """Cancel language switch timer"""
+        if self.state._language_switcher_timer:
+            self.root.after_cancel(self.state._language_switcher_timer)
+            self.state._language_switcher_timer = None
+            self.status_label.config(text="")
+
+    def _switch_language(self):
+        """Switch between English and German"""
+        from core.translations import LanguageManager
+        
+        # Toggle language
+        new_lang = "de" if self.state.language == "en" else "en"
+        self.state.language = new_lang
+        LanguageManager.set_language(new_lang)
+        
+        # Refresh all UI texts
+        self._refresh_ui_language() 
+           # Save the language preference
+        self._save_paired_remotes()  
+        
+        # Show confirmation
+        lang_name = "German" if new_lang == "de" else "English"
+        self.status_label.config(text=f"Language: {lang_name}", fg="#4caf50")
+        
+        # Clear after 3 seconds
+        self.root.after(3000, lambda: self.status_label.config(text=""))
+        
+        self.state._language_switcher_timer = None
+        print(f"Language switched to {new_lang}")
 
     # ====================================================== FAULT CALLBACKS ======================================================
 
@@ -268,7 +391,7 @@ class JetUI:
                     self.state.system_stalled = self.fault_monitor.is_stalled()
                     self.state.active_fault_list = self.fault_monitor.active_fault_list
             except Exception as e:
-                print(f"❌ Fault check error: {e}")
+                print(f"Fault check error: {e}")
     
         # Schedule next check
             self.root.after(self.fault_check_interval, self._monitor_faults)
@@ -371,10 +494,12 @@ class JetUI:
                 with open(config_file, 'r') as f:
                     data = json.load(f)
                     self.state.paired_remotes = set(data.get("paired_macs", []))
+                    self.state.language = data.get("language", "en")  # Load language preference
                     print(f"Loaded {len(self.state.paired_remotes)} paired remotes")
         except Exception as e:
             print(f"Error loading paired remotes: {e}")
             self.state.paired_remotes = set()
+            self.state.language = "en"  # Default to English
 
     def _save_paired_remotes(self):
         """Save paired remotes to file"""
@@ -382,7 +507,8 @@ class JetUI:
             config_file = PATHS["paired_remotes"]
             os.makedirs(os.path.dirname(config_file), exist_ok=True)
             with open(config_file, 'w') as f:
-                json.dump({"paired_macs": list(self.state.paired_remotes)}, f)
+                json.dump({"paired_macs": list(self.state.paired_remotes),
+                            "language": self.state.language}, f)
             print(f"Saved {len(self.state.paired_remotes)} paired remotes")
         except Exception as e:
             print(f"Error saving paired remotes: {e}")
@@ -408,12 +534,12 @@ class JetUI:
         # Show appropriate message
         if self.state.single_remote_mode and old_count > 0:
             self.status_label.config(
-                text="LEARNMode - Press remote button", 
+                 text=t("ble.learn_mode"),  
                 fg="#ff9800"
             )
         else:
             self.status_label.config(
-                text="PAIRING: Press any button on your remote", 
+                text=t("ble.pairing_mode"),  
                 fg="#ff9800"
             )
         
@@ -429,10 +555,11 @@ class JetUI:
             self.cm.update_allowed_macs(self.state.paired_remotes)
         
         # IMPROVED MESSAGING 
+        # IMPROVED MESSAGING 
         if len(self.state.paired_remotes) > 0:
-            self.status_label.config(text="Remote connected - Ready to use", fg="#4caf50")
+            self.status_label.config(text=t("ble.remote_connected"), fg="#4caf50")
         else:
-            self.status_label.config(text="Pairing mode ended - No remote connected", fg="#ff5555")
+            self.status_label.config(text=t("ble.pairing_ended"), fg="#ff5555")
         
         # Restore normal Bluetooth icon
         if self.state.bluetooth_connected and self.bt_icon_on:
@@ -502,9 +629,9 @@ class JetUI:
                 self.disable_pairing_mode()
                 
                 if old_remotes:
-                    self.status_label.config(text="Remote replaced!", fg="#4caf50")
+                    self.status_label.config(text=t("ble.remote_replaced"), fg="#4caf50")
                 else:
-                    self.status_label.config(text="Remote paired!", fg="#4caf50")
+                    self.status_label.config(text=t("ble.remote_paired"), fg="#4caf50")
             
             
                 self._show_pairing_success()
@@ -519,11 +646,12 @@ class JetUI:
             action()
 
  # ====================================================== GPIO BUTTON HANDLING ======================================================
-    
+    # ... rest of your existing button handling code .
     def handle_button_press(self, pin, level):
         """Handle GPIO button events from gpiozero"""
         power_pin = 3
         mode_pin = 23
+        timer_pin = 16
         
         if pin == power_pin:
             if level == 0:
@@ -592,6 +720,18 @@ class JetUI:
                 self.set_timer()
             elif pin == 6:
                 self.adjust_speed()
+        # Handle TIMER button for language switching
+        
+        if pin == timer_pin:
+            if level == 0:  # Button pressed
+                self.state._language_switch_start = time.time()
+                self._start_language_switch_timer()
+            else:  # Button released
+                self._cancel_language_switch_timer()
+                # Only execute normal timer function if held for less than 5 seconds
+                if not self.state._language_switcher_timer:
+                    self.set_timer()        
+             
    
 
     def _enter_pairing_mode(self):
@@ -606,7 +746,7 @@ class JetUI:
         # If system is on, stop motor safely first
         try:
             # Provide user feedback
-            self.status_label.config(text="SHUTDOWN", fg="#ff5555")
+           self.status_label.config(text=t("status.motor_link_fail"), fg="#ff5555")
         except Exception:
             pass
 
@@ -637,7 +777,7 @@ class JetUI:
             # This depends on your motor controller hardware
             
         except Exception as e:
-            print(f"⚠️ Motor stop error: {e}")
+            print(f" Motor stop error: {e}")
 
         # HARDWARE RESET (if available) 
         try:
@@ -647,10 +787,10 @@ class JetUI:
             # Add your specific hardware reset code here
             
         except Exception as e:
-            print(f"⚠️ Hardware reset error: {e}")
+            print(f" Hardware reset error: {e}")
 
         #  ADD SAFETY DELAY 
-        print("⏳ Waiting for motor to stop...")
+        print(" Waiting for motor to stop...")
         time.sleep(2)  # Critical: Wait for motor to actually stop
 
         # THEN PROCEED WITH NORMAL SHUTDOWN 
@@ -670,7 +810,7 @@ class JetUI:
                     pass
 
             # Sync filesystems
-            print("💾 Syncing filesystems...")
+            print(" Syncing filesystems...")
             subprocess.run(["sync"])
             
             # Shutdown
@@ -710,7 +850,7 @@ class JetUI:
             self.state.motor_ready = True
             print("Motor initialized successfully")
         else:
-            self.status_label.config(text="MOTOR LINK FAIL", fg="#ff5555")
+            self.status_label.config(text=t("status.motor_link_fail"), fg="#ff5555")
             print("ERROR: Motor initialization failed")
             
 
@@ -733,6 +873,8 @@ class JetUI:
             self.status_label.config(text="START ERR", fg="#ff5555")
 
     def _motor_stop_safe(self):
+        
+
         """Stop motor safely"""
         if not self.state.motor_ready:
             return
@@ -831,8 +973,28 @@ class JetUI:
         if self.state.current_faults == 0:
             self.status_label.config(text="", fg=self.colors["primary"])
             self.root.after(2000, lambda: self.status_label.config(text="", fg="#4caf50") if self.state.power_on and not self.state.paused and self.state.current_faults == 0 else None)
-        
-        self.update_labels()
+            
+                        # Show descriptive mode name temporarily
+            mode_descriptions = {
+                "P0": t("mode.p0_desc"),
+                "P1": t("mode.p1_desc"), 
+                "P2": t("mode.p2_desc"),
+                "P3": t("mode.p3_desc"),
+                "P4": t("mode.p4_desc"),
+                "P5": t("mode.p5_desc"),
+                "T": t("mode.t_desc")
+            }
+            
+            description = mode_descriptions.get(self.state.mode, self.state.mode)
+            self.status_label.config(text=description, fg=self.colors["primary"])
+            
+            # Clear after 3 seconds
+            self.root.after(7000, lambda: self.status_label.config(
+                text="", 
+                fg="#4caf50"
+            ) if self.state.power_on and not self.state.paused and self.state.current_faults == 0 else None)
+            
+            self.update_labels()
            # TURN LED OFF
       
         print(f"Mode: {self.state.mode}")
@@ -1009,7 +1171,7 @@ class JetUI:
             # CRITICAL: Stall faults present - cannot auto-clear
             print("ERROR: STALL FAULTS - cannot auto-start")
             self.status_label.config(
-                text="CRITICAL FAULT - FIX REQUIRED",
+                text=t("fault.critical_required"),
                 fg=FAULT_COLORS["active"]
             )
             self.root.after(3000, self._restore_fault_display)
@@ -1062,7 +1224,7 @@ class JetUI:
             if not success:
                 print("ERROR: FAULT_ACK failed")
                 self.status_label.config(
-                    text="FAULT CLEAR FAILED",
+                        text=t("fault.clear_failed"),
                     fg=FAULT_COLORS["active"]
                 )
                 return
@@ -1078,7 +1240,7 @@ class JetUI:
                 # Success - faults cleared
                 print("Faults cleared successfully")
                 self.status_label.config(
-                    text="FAULTS CLEARED",
+                     text=t("fault.cleared"),
                     fg="#4caf50"
                 )
                 
@@ -1090,7 +1252,7 @@ class JetUI:
                 # Stall faults remain
                 print(f"ERROR: Stall faults remain: 0x{faults_after:04X}")
                 self.status_label.config(
-                    text="CRITICAL FAULT - FIX REQUIRED",
+                    text=t("fault.critical_required"),
                     fg=FAULT_COLORS["active"]
                 )
                 self.root.after(3000, self._restore_fault_display)
@@ -1099,14 +1261,14 @@ class JetUI:
                 # Other faults remain (voltage/current still out of range)
                 print(f"WARNING: Faults remain: 0x{faults_after:04X}")
                 self.status_label.config(
-                    text="CONDITION NOT FIXED",
+                    text=t("fault.critical_required"),
                     fg=FAULT_COLORS["warning"]
                 )
                 
         except Exception as e:
             print(f"ERROR: Error clearing faults: {e}")
             self.status_label.config(
-                text="FAULT CLEAR ERROR",
+                text=t("fault.clear_failed"),
                 fg=FAULT_COLORS["active"]
             ) 
             
@@ -1195,11 +1357,10 @@ class JetUI:
     def update_labels(self):
         """Update all display labels"""
         self.speed_label.config(text=f"{self.state.speed}%")
-        self.mode_label.config(text=self.mode_manager.get_mode_name(self.state.mode))
-        
+        self.mode_label.config(text=self.mode_manager.get_mode_name(self.state.mode))        
         if self.state.show_running and self.state.mode == "P0":
             rmins, rsecs = divmod(self.state.running_elapsed, 60)
-            self.speed_time_label.config(text=f"RUN: {rmins:02d}:{rsecs:02d}")
+            self.speed_time_label.config(text=f"{t('ui.run')}: {rmins:02d}:{rsecs:02d}")
         else:
             self.speed_time_label.config(text="")
         

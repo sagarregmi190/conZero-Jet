@@ -1,9 +1,34 @@
 import os 
 from pathlib import Path
+from core.translations import t 
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent.resolve()
 
 ##config.py configuration for 3.5 inc display 
+
+def get_fault_names():
+    return {
+        0x0001: t("fault.foc_duration"),
+        0x0002: t("fault.over_voltage"),
+        0x0004: t("fault.under_voltage"),
+        0x0008: t("fault.over_temperature"),
+        0x0010: t("fault.startup_fail"),
+        0x0020: t("fault.speed_feedback"),
+        0x0040: t("fault.over_current"),
+        0x0080: t("fault.software_error"),
+        0x0400: t("fault.driver_protection"),
+    }
+
+def get_mode_descriptions():
+    return {
+        "P0": t("mode.p0_desc"),
+        "T":  t("mode.t_desc"),
+        "P1": t("mode.p1_desc"),
+        "P2": t("mode.p2_desc"),
+        "P3": t("mode.p3_desc"),
+        "P4": t("mode.p4_desc"),
+        "P5": t("mode.p5_desc"),
+    }
 
 #screen dimension 
 SCREEN_WIDTH = 480
@@ -33,6 +58,10 @@ TRAINING_PLANS = {
 }
 
 
+
+
+
+
 # Default durations for each mode (in seconds)
 MODE_DURATIONS = {
     "P1": 15 * 60,
@@ -42,6 +71,16 @@ MODE_DURATIONS = {
     "P5": 0,
     "P0": 0,
     "T": 0
+}
+
+MODE_DESCRIPTIONS = {
+    "P0": "Free Mode",
+    "T": "Timer Mode",
+    "P1": "Easy Training",
+    "P2": "Medium Training", 
+    "P3": "Hard Training",
+    "P4": "Endurance Training",
+    "P5": "Surf Mode"
 }
 
 # GPIO pin mapping for hardware buttons

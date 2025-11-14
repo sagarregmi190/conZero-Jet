@@ -16,3 +16,4 @@ if __name__ == "__main__":
     root.bind("<Escape>", lambda e: root.attributes("-fullscreen", False))
     app = JetUI(root)
     root.mainloop()
+    

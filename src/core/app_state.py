@@ -54,3 +54,8 @@ class AppState:
         self._pairing_blink_id = None
         self._mode_long_timer_id = None
         self.single_remote_mode = True
+        
+        #language 
+        self.language = None
+        self._language_switch_start =None
+        self._language_switcher_timer = None

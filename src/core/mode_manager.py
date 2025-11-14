@@ -25,4 +25,6 @@ class ModeManager:
     def get_mode_name(self,mode):
         #returns the mode names 
         return MODE_NAMES.get(mode,mode)
+
+        
         
